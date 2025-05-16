@@ -34,9 +34,14 @@ def input_generator(csv_file, img_size, load_img=True):
             yield label
 
 
-def gen_model(model_path, weights_path, trainable):
+def gen_model(model_path, weights_path=None, trainable):
 
+    # We need to load the model, get it's config and generate a model
+    # from the config, as to avoid possibly loading weights.
     model_inherit = tf.keras.models.load_model(model_path)
+    config = model_inherit.get_config()
+    model_inherit = tf.keras.models.from_config(config)
+    config = None
 
     # Specify the name of the layer to remove
     layer_to_remove = 'decoder'
@@ -67,8 +72,8 @@ def gen_model(model_path, weights_path, trainable):
         tf.keras.layers.Dense(2, activation='softmax')])
     
     model.compile(optimizer='adam',loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-    model.load_weights(weights_path, skip_mismatch=True)
+    if weights_path:
+        model.load_weights(weights_path, skip_mismatch=True)
 
     return model
 
@@ -156,7 +161,7 @@ if __name__ == '__main__':
     args.add_argument('--test-csv', type=str, required=True)
     args.add_argument('--val-csv', type=str, required=True)
     args.add_argument('--epochs', type=int, default=50, required=False)
-    args.add_argument('--weights-path', type=str, required=True)
+    args.add_argument('--weights-path', type=str, required=False)
     args.add_argument('--model-path', type=str, required=True)
     args.add_argument('--img-size', type=int, default=64, required=False)
     args.add_argument('--trainable', type=int, required=True) # TODO: figure out if Python
