@@ -26,7 +26,7 @@ def input_generator(csv_file, img_size, load_img=True):
             # TODO: Possibly augment these images?
             img = tf.keras.utils.load_img(img)
             img = img.resize((img_size, img_size))
-            img = tf.keras.utils.img_to_array(img) # TODO: Normalize?
+            img = tf.keras.utils.img_to_array(img)/255.0
 
             yield img, label
     else:
