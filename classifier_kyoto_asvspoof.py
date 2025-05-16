@@ -222,7 +222,7 @@ if __name__ == '__main__':
     initial_time = time.time()
     
     print(f'{time.strftime("%G %H:%M:%S", time.localtime(initial_time))}:',
-          'Model testing started.', file=f)
+          'Model testing started.')
 
     callbacks = [ tf.keras.callbacks.CSVLogger(
                       filename=model_test_log,
