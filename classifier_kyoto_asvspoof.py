@@ -36,12 +36,17 @@ def input_generator(csv_file, img_size, load_img=True):
 
 def gen_model(model_path, weights_path, trainable):
 
-    model_inherit = tf.keras.models.load_model(model_path)
+    if weights_path:
+        model_inherit = tf.keras.models.load_model(model_path)
+    else:
+        with open(model_path, 'r') as f:
+            config  = f.read()
+        model_inherit = tf.keras.models.model_from_json(config)
 
     # Specify the name of the layer to remove
     layer_to_remove = 'decoder'
 
-    # Find the index of the layer with the specified name
+    # Find the index of the layer to remove
     layer_index = None
     for i, layer in enumerate(model_inherit.layers):
         if layer.name == layer_to_remove:
@@ -49,17 +54,23 @@ def gen_model(model_path, weights_path, trainable):
             break
 
     if layer_index is not None:
-        # Create a new model without the layer
-        model_inherit = tf.keras.models.Model(inputs=model_inherit.input,
-                                              outputs=model_inherit.layers[layer_index-1].output)
+        # Get the input shape from the original model
+        input_shape = model_inherit.input_shape[1:]  # exclude batch dimension
+        inputs = tf.keras.Input(shape=input_shape)
+        # Rebuild the model up to the layer before the one we want to remove
+        x = inputs
+        for i in range(1, layer_index):  # start from 1 if first layer is input
+            x = model_inherit.layers[i](x)
+        model_inherit_trimmed = tf.keras.Model(inputs=inputs, outputs=x)
         print(f"Layer '{layer_to_remove}' removed successfully!")
     else:
         print(f"Layer '{layer_to_remove}' not found in the model.")
 
-    model_inherit.trainable = trainable
+    model_inherit = None
+    model_inherit_trimmed.trainable = trainable
 
     model = tf.keras.Sequential([
-        model_inherit,
+        model_inherit_trimmed,
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.Dense(128, activation='relu'),
